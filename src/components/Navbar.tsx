@@ -3,17 +3,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import type { User } from "@supabase/supabase-js";
-import { LogOut, Camera, Settings } from "lucide-react";
+import { LogOut, Camera, Settings, Lock } from "lucide-react";
 
 interface NavbarProps {
     onLoginClick: () => void;
     onRegisterClick: () => void;
     onLogoutClick: () => void;
+    onChangePasswordClick?: () => void;
     user: User | null;
     isAdmin?: boolean;
 }
 
-export const Navbar = ({ onLoginClick, onRegisterClick, onLogoutClick, user, isAdmin = false }: NavbarProps) => {
+export const Navbar = ({ onLoginClick, onRegisterClick, onLogoutClick, onChangePasswordClick, user, isAdmin = false }: NavbarProps) => {
     const navigate = useNavigate();
     const { scrollY } = useScroll();
     const [hidden, setHidden] = useState(false);
@@ -83,6 +84,15 @@ export const Navbar = ({ onLoginClick, onRegisterClick, onLogoutClick, user, isA
                                     />
                                 </div>
                             </div>
+                            {onChangePasswordClick && (
+                                <button
+                                    onClick={onChangePasswordClick}
+                                    className="p-2 text-white/60 hover:text-white transition-colors"
+                                    title="Change Password"
+                                >
+                                    <Lock className="w-5 h-5" />
+                                </button>
+                            )}
                             <button
                                 onClick={onLogoutClick}
                                 className="p-2 text-white/60 hover:text-white transition-colors"

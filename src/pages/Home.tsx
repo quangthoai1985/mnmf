@@ -3,6 +3,7 @@ import { Hero } from "../components/Hero";
 import { Gallery } from "../components/Gallery";
 import { Navbar } from "../components/Navbar";
 import { AuthModal } from "../components/auth/AuthModal";
+import { ChangePasswordModal } from "../components/auth/ChangePasswordModal";
 import { supabase } from "../lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
@@ -11,6 +12,8 @@ export const Home = () => {
     const [authTab, setAuthTab] = useState<"login" | "register">("login");
     const [user, setUser] = useState<User | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
+
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
     const galleryRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +65,7 @@ export const Home = () => {
                 onLoginClick={() => openAuth("login")}
                 onRegisterClick={() => openAuth("register")}
                 onLogoutClick={handleLogout}
+                onChangePasswordClick={() => setIsChangePasswordOpen(true)}
                 user={user}
                 isAdmin={isAdmin}
             />
@@ -76,6 +80,11 @@ export const Home = () => {
                 isOpen={isAuthOpen}
                 onClose={() => setIsAuthOpen(false)}
                 initialTab={authTab}
+            />
+
+            <ChangePasswordModal
+                isOpen={isChangePasswordOpen}
+                onClose={() => setIsChangePasswordOpen(false)}
             />
         </div>
     );

@@ -36,17 +36,31 @@ export const Gallery = ({ user, onLoginClick }: GalleryProps) => {
     const [activeCategory, setActiveCategory] = useState<string | "All">("All");
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
-    // const [categories, setCategories] = useState<{ id: string, name: string }[]>([]); // Not relying on DB categories table for now to ensure mapping works
+    const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchPhotosAndCategories = async () => {
             try {
+                // Fetch categories
+                const { data: categoriesData, error: categoriesError } = await supabase
+                    .from('categories')
+                    .select('*')
+                    .order('name');
+
+                if (categoriesError) {
+                    // Don't block the whole page if categories fail, just log it
+                    console.warn("Could not fetch categories:", categoriesError);
+                } else {
+                    setCategories(categoriesData || []);
+                }
+
                 // Fetch photos from Supabase
                 const { data: photosData, error: photosError } = await supabase
                     .from('photos')
-                    .select('*');
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
                 if (photosError) throw photosError;
 
@@ -73,14 +87,11 @@ export const Gallery = ({ user, onLoginClick }: GalleryProps) => {
                     title: p.title || "Untitled",
                     author: "Unknown Photographer",
                     category: p.category as Category,
-                    category_display: CATEGORY_MAP[p.category] || p.category,
+                    category_display: CATEGORY_MAP[p.category] || p.category, // Fallback to raw name if no mapping
                     likes: likeCounts[p.id] || 0
                 }));
 
                 setPhotos(mappedPhotos);
-
-                // We are skipping fetching 'categories' table to strictly enforce the requested mapping
-                // and avoid mismatches. If we needed to fetch, we would map the names here.
 
             } catch (err: any) {
                 console.error("Error fetching data:", err);
@@ -95,7 +106,6 @@ export const Gallery = ({ user, onLoginClick }: GalleryProps) => {
 
     const filteredPhotos = useMemo(() => {
         if (activeCategory === "All") return photos;
-        // activeCategory is English (e.g., "Portrait"), photo.category is English
         return photos.filter((photo) => photo.category === activeCategory);
     }, [activeCategory, photos]);
 
@@ -123,18 +133,18 @@ export const Gallery = ({ user, onLoginClick }: GalleryProps) => {
                     >
                         Tất cả
                     </button>
-                    {Object.entries(CATEGORY_MAP).map(([key, label]) => (
+                    {categories.map((cat) => (
                         <button
-                            key={key}
-                            onClick={() => setActiveCategory(key)}
+                            key={cat.id}
+                            onClick={() => setActiveCategory(cat.name)}
                             className={cn(
                                 "px-6 py-2 rounded-full text-sm uppercase tracking-widest transition-all duration-300 border border-transparent",
-                                activeCategory === key
+                                activeCategory === cat.name
                                     ? "bg-white text-black font-bold"
                                     : "bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700"
                             )}
                         >
-                            {label}
+                            {CATEGORY_MAP[cat.name] || cat.name}
                         </button>
                     ))}
                 </div>

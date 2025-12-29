@@ -1,7 +1,0 @@
-{
-    "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "mnmf-ui",
-    "main": "dist/index.html",
-    "compatibility_date": "2025-01-01",
-    "pages_build_output_dir": "dist"
-}

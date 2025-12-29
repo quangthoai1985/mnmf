@@ -18,15 +18,18 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "@supabase/supabase-js";
 import { cn } from "../lib/utils";
+import { Lightbox } from "../components/Lightbox";
+import type { Photo as GalleryPhoto } from "../components/Gallery";
 
 interface Photo {
     id: string;
     title: string;
     url: string;
     category: string;
-    created_at: string;
+    status: "pending" | "approved" | "rejected";
     photographer_id: string;
     author_name?: string;
+    created_at: string;
     likes?: number;
 }
 
@@ -43,6 +46,7 @@ export const AdminDashboard = () => {
     // Category form states
     const [newCategoryName, setNewCategoryName] = useState("");
     const [editingCategory, setEditingCategory] = useState<any | null>(null);
+    const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
 
     useEffect(() => {
         const checkUser = async () => {
@@ -427,15 +431,20 @@ export const AdminDashboard = () => {
                                 />
                                 {/* Actions Overlay */}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 backdrop-blur-[2px]">
-                                    <a
-                                        href={photo.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <button
+                                        onClick={() => setSelectedPhoto({
+                                            id: photo.id,
+                                            url: photo.url,
+                                            title: photo.title,
+                                            category: photo.category,
+                                            author: photo.author_name || "Unknown",
+                                            likes: photo.likes || 0
+                                        })}
                                         className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors"
                                         title="Xem ảnh gốc"
                                     >
                                         <ExternalLink size={18} />
-                                    </a>
+                                    </button>
                                     <button
                                         onClick={() => handleDeletePhoto(photo.id, photo.url)}
                                         className="p-2.5 bg-red-500/80 hover:bg-red-500 text-white rounded-full backdrop-blur-md transition-colors"
@@ -472,7 +481,7 @@ export const AdminDashboard = () => {
     const renderUsersTab = () => (
         <div className="space-y-6">
             <h3 className="text-xl font-bold text-white mb-6">Quản lý Người dùng ({profiles.length})</h3>
-            <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden">
+            <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden overflow-x-auto">
                 <table className="w-full text-left text-sm text-slate-400">
                     <thead className="bg-slate-950 text-slate-200 font-medium border-b border-white/5">
                         <tr>
@@ -750,6 +759,13 @@ export const AdminDashboard = () => {
                     </AnimatePresence>
                 </div>
             </main>
+
+            <Lightbox
+                photo={selectedPhoto}
+                onClose={() => setSelectedPhoto(null)}
+                user={user}
+                onLoginClick={() => { }} // Admin is already logged in
+            />
         </div>
     );
 };

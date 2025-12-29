@@ -307,10 +307,10 @@ export const UserPhotos = () => {
                 </div>
             </div>
 
-            <main className="max-w-7xl mx-auto px-6 py-8">
+            <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
                 <div className="grid lg:grid-cols-12 gap-8">
                     {/* Left Column: Upload Form */}
-                    <div className="lg:col-span-4 lg:sticky lg:top-28 h-fit space-y-6">
+                    <div className="lg:col-span-4 lg:sticky lg:top-28 lg:h-fit space-y-6">
                         <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
                             {/* Decoration */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>

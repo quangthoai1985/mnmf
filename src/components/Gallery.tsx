@@ -14,6 +14,7 @@ export interface Photo {
     title: string;
     author: string;
     category: Category;
+    category_display?: string;
     likes: number;
 }
 
@@ -72,6 +73,7 @@ export const Gallery = ({ user, onLoginClick }: GalleryProps) => {
                     title: p.title || "Untitled",
                     author: "Unknown Photographer",
                     category: p.category as Category,
+                    category_display: CATEGORY_MAP[p.category] || p.category,
                     likes: likeCounts[p.id] || 0
                 }));
 

@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "@supabase/supabase-js";
 import { cn } from "../lib/utils";
 import { Lightbox } from "../components/Lightbox";
+import { ConfirmModal } from "../components/ConfirmModal";
 import type { Photo as GalleryPhoto } from "../components/Gallery";
 
 interface Photo {
@@ -47,6 +48,14 @@ export const AdminDashboard = () => {
     const [newCategoryName, setNewCategoryName] = useState("");
     const [editingCategory, setEditingCategory] = useState<any | null>(null);
     const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
+
+    // Delete Modal State
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean;
+        type: 'photo' | 'user' | 'category' | null;
+        id: string | null;
+        extraData?: any; // e.g. photo url
+    }>({ isOpen: false, type: null, id: null });
 
     useEffect(() => {
         const checkUser = async () => {
@@ -144,36 +153,51 @@ export const AdminDashboard = () => {
         window.location.href = "/";
     };
 
-    const handleDeletePhoto = async (id: string, url: string) => {
-        if (!confirm("Bạn có chắc chắn muốn xóa ảnh này không?")) return;
-
-        try {
-            // Extract file path from URL
-            const urlParts = url.split("/photos/");
-            if (urlParts.length > 1) {
-                const filePath = urlParts[1];
-                await supabase.storage.from("photos").remove([filePath]);
-            }
-
-            const { error } = await supabase.from('photos').delete().eq('id', id);
-
-            if (error) throw error;
-            setPhotos(photos.filter((p) => p.id !== id));
-        } catch (error: any) {
-            alert("Lỗi khi xóa ảnh: " + error.message);
-        }
+    const openDeleteModal = (type: 'photo' | 'user' | 'category', id: string, extraData?: any) => {
+        setDeleteModal({ isOpen: true, type, id, extraData });
     };
 
-    // User management placeholder functions (delete/ban usually requires edge functions or special admin API)
-    const handleDeleteUser = async (id: string) => {
-        if (!confirm("Hành động này chưa được hỗ trợ hoàn toàn (cần Edge Function). Hiện tại chỉ xóa profile trong bảng profiles.")) return;
-        // In a real app, you'd call an Edge Function to delete the user from Auth as well.
-        // Here we just delete from public profile to simulate.
-        const { error } = await supabase.from('profiles').delete().eq('id', id);
-        if (error) {
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleConfirmDelete = async () => {
+        const { type, id, extraData } = deleteModal;
+        if (!type || !id) return;
+        setIsDeleting(true);
+
+        try {
+            if (type === 'photo') {
+                // Delete Photo Logic
+                const url = extraData;
+                const urlParts = url.split("/photos/");
+                if (urlParts.length > 1) {
+                    const filePath = decodeURIComponent(urlParts[1]);
+                    console.log("Admin deleting file:", filePath);
+                    const { error: storageError } = await supabase.storage.from("photos").remove([filePath]);
+                    if (storageError) console.error("Storage delete warning:", storageError);
+                }
+
+                const { error } = await supabase.from('photos').delete().eq('id', id);
+                if (error) throw error;
+                setPhotos(prev => prev.filter((p) => p.id !== id));
+
+            } else if (type === 'user') {
+                // Delete User Logic
+                const { error } = await supabase.from('profiles').delete().eq('id', id);
+                if (error) throw error;
+                setProfiles(prev => prev.filter(p => p.id !== id));
+
+            } else if (type === 'category') {
+                // Delete Category Logic
+                const { error } = await supabase.from('categories').delete().eq('id', id);
+                if (error) throw error;
+                setCategories(prev => prev.filter(c => c.id !== id));
+            }
+        } catch (error: any) {
+            console.error("Admin delete error:", error);
             alert("Lỗi: " + error.message);
-        } else {
-            setProfiles(profiles.filter(p => p.id !== id));
+        } finally {
+            setIsDeleting(false);
+            setDeleteModal({ isOpen: false, type: null, id: null });
         }
     };
 
@@ -198,16 +222,10 @@ export const AdminDashboard = () => {
         }
     };
 
-    const handleDeleteCategory = async (id: string) => {
-        if (!confirm("Xóa thể loại này sẽ không xóa ảnh thuộc về nó, nhưng ảnh sẽ bị mất liên kết thể loại. Bạn chắc chứ?")) return;
-        try {
-            const { error } = await supabase.from('categories').delete().eq('id', id);
-            if (error) throw error;
-            setCategories(categories.filter(c => c.id !== id));
-        } catch (error: any) {
-            alert("Lỗi xóa thể loại: " + error.message);
-        }
-    };
+    // Keep old function names if they are used elsewhere or just redirect them
+    const handleDeletePhoto = (id: string, url: string) => openDeleteModal('photo', id, url);
+    const handleDeleteUser = (id: string) => openDeleteModal('user', id);
+    const handleDeleteCategory = (id: string) => openDeleteModal('category', id);
 
     const handleUpdateCategory = async (id: string, newName: string) => {
         if (!newName.trim()) return;
@@ -765,6 +783,21 @@ export const AdminDashboard = () => {
                 onClose={() => setSelectedPhoto(null)}
                 user={user}
                 onLoginClick={() => { }} // Admin is already logged in
+            />
+
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+                onConfirm={handleConfirmDelete}
+                title="Xác nhận xóa?"
+                message={
+                    deleteModal.type === 'photo' ? "Bạn có chắc muốn xóa ảnh này? Hành động này không thể hoàn tác." :
+                        deleteModal.type === 'user' ? "Bạn có chắc muốn xóa người dùng này? Họ sẽ mất quyền truy cập." :
+                            "Xóa thể loại này sẽ không xóa ảnh thuộc về nó, nhưng ảnh sẽ bị mất liên kết."
+                }
+                confirmText="Xóa ngay"
+                isDangerous={true}
+                isLoading={isDeleting}
             />
         </div>
     );

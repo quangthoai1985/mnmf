@@ -16,6 +16,7 @@ import {
     LogOut
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { useToast } from "../components/Toast";
 import { cn } from "../lib/utils";
 
@@ -48,6 +49,10 @@ export const UserPhotos = () => {
     // Edit states
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState("");
+
+    // Delete Modal state
+    const [photoToDelete, setPhotoToDelete] = useState<Photo | null>(null);
+
 
     useEffect(() => {
         const checkUser = async () => {
@@ -195,30 +200,48 @@ export const UserPhotos = () => {
         }
     };
 
-    const handleDelete = async (photo: Photo) => {
-        if (!confirm("Bạn có chắc muốn xóa ảnh này?")) return;
+    const handleDeleteClick = (photo: Photo) => {
+        setPhotoToDelete(photo);
+    };
+
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleConfirmDelete = async () => {
+        if (!photoToDelete) return;
+        setIsDeleting(true);
+        console.log("Starting delete process for:", photoToDelete.id);
 
         try {
             // Extract file path from URL
-            const urlParts = photo.url.split("/photos/");
+            const urlParts = photoToDelete.url.split("/photos/");
             if (urlParts.length > 1) {
-                const filePath = urlParts[1];
-                await supabase.storage.from("photos").remove([filePath]);
+                const filePath = decodeURIComponent(urlParts[1]); // Ensure path is decoded, e.g. %20 -> space
+                console.log("Deleting from storage:", filePath);
+                const { error: storageError } = await supabase.storage.from("photos").remove([filePath]);
+                if (storageError) {
+                    console.error("Storage delete error (non-blocking):", storageError);
+                }
+            } else {
+                console.warn("Could not extract file path from URL:", photoToDelete.url);
             }
 
             // Delete from database
+            console.log("Deleting from DB:", photoToDelete.id);
             const { error } = await supabase
                 .from("photos")
                 .delete()
-                .eq("id", photo.id);
+                .eq("id", photoToDelete.id);
 
             if (error) throw error;
 
-            setPhotos(photos.filter((p) => p.id !== photo.id));
+            setPhotos(prev => prev.filter((p) => p.id !== photoToDelete.id));
             showToast("Đã xóa ảnh thành công!", "success");
         } catch (error: any) {
             console.error("Delete error:", error);
             showToast("Lỗi khi xóa ảnh: " + error.message, "error");
+        } finally {
+            setIsDeleting(false);
+            setPhotoToDelete(null);
         }
     };
 
@@ -492,7 +515,7 @@ export const UserPhotos = () => {
                                                         <span className="text-xs font-medium text-white/90">Sửa</span>
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDelete(photo)}
+                                                        onClick={() => handleDeleteClick(photo)}
                                                         className="flex flex-col items-center gap-1 group/btn"
                                                     >
                                                         <div className="p-3 bg-white/10 group-hover/btn:bg-red-500 text-white rounded-full backdrop-blur-md transition-all transform group-hover/btn:scale-110">
@@ -562,6 +585,16 @@ export const UserPhotos = () => {
                     </div>
                 </div>
             </main>
+            <ConfirmModal
+                isOpen={!!photoToDelete}
+                onClose={() => setPhotoToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title="Xóa ảnh?"
+                message="Hành động này không thể hoàn tác. Ảnh sẽ bị xóa vĩnh viễn khỏi hệ thống."
+                confirmText="Xóa ngay"
+                isDangerous={true}
+                isLoading={isDeleting}
+            />
         </div>
     );
 };

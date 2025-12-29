@@ -227,12 +227,17 @@ export const UserPhotos = () => {
 
             // Delete from database
             console.log("Deleting from DB:", photoToDelete.id);
-            const { error } = await supabase
+            const { error, count } = await supabase
                 .from("photos")
-                .delete()
+                .delete({ count: 'exact' })
                 .eq("id", photoToDelete.id);
 
+            console.log("DB Delete Result:", { error, count });
+
             if (error) throw error;
+            if (count === 0) {
+                throw new Error("Xóa thất bại. Có thể do lỗi phân quyền (RLS) hoặc ảnh không còn tồn tại.");
+            }
 
             setPhotos(prev => prev.filter((p) => p.id !== photoToDelete.id));
             showToast("Đã xóa ảnh thành công!", "success");

@@ -176,20 +176,26 @@ export const AdminDashboard = () => {
                     if (storageError) console.error("Storage delete warning:", storageError);
                 }
 
-                const { error } = await supabase.from('photos').delete().eq('id', id);
+                const { error, count } = await supabase.from('photos').delete({ count: 'exact' }).eq('id', id);
+                console.log("Delete Photo Result:", { error, count });
                 if (error) throw error;
+                if (count === 0) throw new Error("Không xóa được ảnh (RLS hoặc không tồn tại)");
                 setPhotos(prev => prev.filter((p) => p.id !== id));
 
             } else if (type === 'user') {
                 // Delete User Logic
-                const { error } = await supabase.from('profiles').delete().eq('id', id);
+                const { error, count } = await supabase.from('profiles').delete({ count: 'exact' }).eq('id', id);
+                console.log("Delete User Result:", { error, count });
                 if (error) throw error;
+                if (count === 0) throw new Error("Không xóa được user (RLS hoặc không tồn tại)");
                 setProfiles(prev => prev.filter(p => p.id !== id));
 
             } else if (type === 'category') {
                 // Delete Category Logic
-                const { error } = await supabase.from('categories').delete().eq('id', id);
+                const { error, count } = await supabase.from('categories').delete({ count: 'exact' }).eq('id', id);
+                console.log("Delete Category Result:", { error, count });
                 if (error) throw error;
+                if (count === 0) throw new Error("Không xóa được category (RLS hoặc không tồn tại)");
                 setCategories(prev => prev.filter(c => c.id !== id));
             }
         } catch (error: any) {

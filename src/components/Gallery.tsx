@@ -4,9 +4,9 @@ import { PhotoCard } from "./PhotoCard";
 import { Lightbox } from "./Lightbox";
 import { cn } from "../lib/utils";
 import { supabase } from "../lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 export type Category = string;
-// Removed CATEGORIES constant
 
 export interface Photo {
     id: string;
@@ -17,11 +17,25 @@ export interface Photo {
     likes: number;
 }
 
-export const Gallery = () => {
+interface GalleryProps {
+    user: User | null;
+    onLoginClick: () => void;
+}
+
+// MAPPING: English (DB) -> Vietnamese (UI)
+const CATEGORY_MAP: Record<string, string> = {
+    'Portrait': 'Ảnh Chân Dung',
+    'Landscape': 'Ảnh Phong Cảnh',
+    'Street': 'Ảnh Tự Do',
+    // Add others if needed
+};
+
+export const Gallery = ({ user, onLoginClick }: GalleryProps) => {
+    // activeCategory stores the English Key (e.g., "Portrait") or "All"
     const [activeCategory, setActiveCategory] = useState<string | "All">("All");
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
-    const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+    // const [categories, setCategories] = useState<{ id: string, name: string }[]>([]); // Not relying on DB categories table for now to ensure mapping works
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -35,28 +49,36 @@ export const Gallery = () => {
 
                 if (photosError) throw photosError;
 
+                // Fetch like counts for all photos
+                const photoIds = (photosData || []).map(p => p.id);
+                const likeCounts: Record<string, number> = {};
+
+                if (photoIds.length > 0) {
+                    // Get like counts grouped by photo_id
+                    const { data: likesData } = await supabase
+                        .from('photo_likes')
+                        .select('photo_id');
+
+                    if (likesData) {
+                        likesData.forEach(like => {
+                            likeCounts[like.photo_id] = (likeCounts[like.photo_id] || 0) + 1;
+                        });
+                    }
+                }
+
                 const mappedPhotos: Photo[] = (photosData || []).map((p: any) => ({
                     id: p.id,
                     url: p.url,
                     title: p.title || "Untitled",
                     author: "Unknown Photographer",
                     category: p.category as Category,
-                    likes: 0
+                    likes: likeCounts[p.id] || 0
                 }));
 
                 setPhotos(mappedPhotos);
 
-                // Fetch categories
-                const { data: categoriesData, error: categoriesError } = await supabase
-                    .from('categories')
-                    .select('*')
-                    .order('name');
-
-                if (categoriesError) {
-                    console.warn("Could not fetch categories:", categoriesError);
-                } else {
-                    setCategories(categoriesData || []);
-                }
+                // We are skipping fetching 'categories' table to strictly enforce the requested mapping
+                // and avoid mismatches. If we needed to fetch, we would map the names here.
 
             } catch (err: any) {
                 console.error("Error fetching data:", err);
@@ -71,6 +93,7 @@ export const Gallery = () => {
 
     const filteredPhotos = useMemo(() => {
         if (activeCategory === "All") return photos;
+        // activeCategory is English (e.g., "Portrait"), photo.category is English
         return photos.filter((photo) => photo.category === activeCategory);
     }, [activeCategory, photos]);
 
@@ -96,20 +119,20 @@ export const Gallery = () => {
                                 : "bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700"
                         )}
                     >
-                        All
+                        Tất cả
                     </button>
-                    {categories.map((cat) => (
+                    {Object.entries(CATEGORY_MAP).map(([key, label]) => (
                         <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.name)}
+                            key={key}
+                            onClick={() => setActiveCategory(key)}
                             className={cn(
                                 "px-6 py-2 rounded-full text-sm uppercase tracking-widest transition-all duration-300 border border-transparent",
-                                activeCategory === cat.name
+                                activeCategory === key
                                     ? "bg-white text-black font-bold"
                                     : "bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700"
                             )}
                         >
-                            {cat.name}
+                            {label}
                         </button>
                     ))}
                 </div>
@@ -140,7 +163,12 @@ export const Gallery = () => {
             </div>
 
             {/* Lightbox Modal */}
-            <Lightbox photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
+            <Lightbox
+                photo={selectedPhoto}
+                onClose={() => setSelectedPhoto(null)}
+                user={user}
+                onLoginClick={onLoginClick}
+            />
         </section>
     );
 };

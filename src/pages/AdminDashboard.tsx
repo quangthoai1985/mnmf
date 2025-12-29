@@ -109,9 +109,22 @@ export const AdminDashboard = () => {
                 return acc;
             }, {});
 
+            // Fetch like counts from photo_likes table
+            const { data: likesData } = await supabase
+                .from('photo_likes')
+                .select('photo_id');
+
+            const likeCounts: Record<string, number> = {};
+            if (likesData) {
+                likesData.forEach((like: any) => {
+                    likeCounts[like.photo_id] = (likeCounts[like.photo_id] || 0) + 1;
+                });
+            }
+
             const photosWithAuthor = (photosData || []).map((p: any) => ({
                 ...p,
-                author_name: profilesMap[p.photographer_id] || 'Unknown'
+                author_name: profilesMap[p.photographer_id] || 'Unknown',
+                likes: likeCounts[p.id] || 0
             }));
 
             setPhotos(photosWithAuthor);
@@ -514,68 +527,80 @@ export const AdminDashboard = () => {
         </div>
     );
 
-    const renderCategoriesTab = () => (
-        <div className="space-y-6">
-            <h3 className="text-xl font-bold text-white mb-6">Quản lý Thể loại ({categories.length})</h3>
+    const renderCategoriesTab = () => {
+        // MAPPING: English (DB) -> Vietnamese (UI)
+        const CATEGORY_MAP: Record<string, string> = {
+            'Portrait': 'Ảnh Chân Dung',
+            'Landscape': 'Ảnh Phong Cảnh',
+            'Street': 'Ảnh Tự Do',
+        };
 
-            {/* Create form */}
-            <form onSubmit={handleAddCategory} className="bg-slate-900 border border-white/5 p-4 rounded-xl flex gap-3 mb-6">
-                <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Nhập tên thể loại mới..."
-                    className="flex-1 bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                />
-                <button
-                    type="submit"
-                    disabled={!newCategoryName.trim()}
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                >
-                    Thêm
-                </button>
-            </form>
+        return (
+            <div className="space-y-6">
+                <h3 className="text-xl font-bold text-white mb-6">Quản lý Thể loại ({categories.length})</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {categories.map((cat) => (
-                    <div key={cat.id} className="bg-slate-900 border border-white/5 p-4 rounded-xl flex items-center justify-between group hover:border-blue-500/30 transition-all">
-                        {editingCategory?.id === cat.id ? (
-                            <div className="flex gap-2 w-full">
-                                <input
-                                    type="text"
-                                    defaultValue={cat.name}
-                                    autoFocus
-                                    onBlur={(e) => handleUpdateCategory(cat.id, e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleUpdateCategory(cat.id, e.currentTarget.value);
-                                        if (e.key === 'Escape') setEditingCategory(null);
-                                    }}
-                                    className="flex-1 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-sm text-white"
-                                />
+                {/* Create form */}
+                <form onSubmit={handleAddCategory} className="bg-slate-900 border border-white/5 p-4 rounded-xl flex gap-3 mb-6">
+                    <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Nhập tên thể loại (English Key)..."
+                        className="flex-1 bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                        type="submit"
+                        disabled={!newCategoryName.trim()}
+                        className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        Thêm
+                    </button>
+                </form>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories.map((cat) => (
+                        <div key={cat.id} className="bg-slate-900 border border-white/5 p-4 rounded-xl flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                            {editingCategory?.id === cat.id ? (
+                                <div className="flex gap-2 w-full">
+                                    <input
+                                        type="text"
+                                        defaultValue={cat.name}
+                                        autoFocus
+                                        onBlur={(e) => handleUpdateCategory(cat.id, e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleUpdateCategory(cat.id, e.currentTarget.value);
+                                            if (e.key === 'Escape') setEditingCategory(null);
+                                        }}
+                                        className="flex-1 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-sm text-white"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-white">{CATEGORY_MAP[cat.name] || cat.name}</span>
+                                    <span className="text-xs text-slate-500 font-mono">{cat.name}</span>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => setEditingCategory(cat)}
+                                    className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-white/5 rounded-lg transition-colors"
+                                >
+                                    <LayoutDashboard size={16} className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteCategory(cat.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
-                        ) : (
-                            <span className="font-medium text-slate-200">{cat.name}</span>
-                        )}
-
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                onClick={() => setEditingCategory(cat)}
-                                className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-white/5 rounded-lg transition-colors"
-                            >
-                                <LayoutDashboard size={16} className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => handleDeleteCategory(cat.id)}
-                                className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
-                            >
-                                <Trash2 size={16} />
-                            </button>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="min-h-screen bg-slate-950 text-white font-sans flex overflow-hidden">

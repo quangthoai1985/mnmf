@@ -69,7 +69,7 @@ export const Home = () => {
             <Hero onEnter={scrollToGallery} />
 
             <div ref={galleryRef}>
-                <Gallery />
+                <Gallery user={user} onLoginClick={() => openAuth("login")} />
             </div>
 
             <AuthModal

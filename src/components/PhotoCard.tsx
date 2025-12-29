@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import type { Photo } from "../data/mock";
+import type { Photo } from "./Gallery";
 
 interface PhotoCardProps {
     photo: Photo;

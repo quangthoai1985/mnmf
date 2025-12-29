@@ -188,7 +188,7 @@ export const Lightbox = ({ photo, onClose, user, onLoginClick }: LightboxProps) 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-black/98"
+                className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl"
                 onClick={onClose}
             >
                 {/* Close Button */}
@@ -201,65 +201,65 @@ export const Lightbox = ({ photo, onClose, user, onLoginClick }: LightboxProps) 
 
                 {/* Fullscreen Image Container */}
                 <div
-                    className="w-full h-full flex items-center justify-center p-4"
+                    className="w-full h-full flex items-center justify-center p-4 md:p-8"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <motion.img
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        src={photo.url}
-                        alt={photo.title}
-                        className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                </div>
+                    <div className="relative group/image w-fit flex justify-center items-center">
+                        <motion.img
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                            src={photo.url}
+                            alt={photo.title}
+                            className="max-h-[85vh] max-w-full object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
 
-                {/* Photo Info - Top Left */}
-                <div
-                    className="absolute top-4 left-4 z-40"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="px-4 py-2 rounded-xl bg-black/50 backdrop-blur-md">
-                        <h2 className="text-lg font-semibold text-white">{photo.title}</h2>
+                        {/* Photo Info - Top Left (Inside Image) */}
+                        <div
+                            className="absolute top-4 left-4 z-40 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300"
+                        >
+                            <div className="px-4 py-2 rounded-xl bg-black/50 backdrop-blur-md">
+                                <h2 className="text-lg font-semibold text-white">{photo.title}</h2>
+                            </div>
+                        </div>
+
+                        {/* Like Button - Bottom Left (Inside Image) */}
+                        <div
+                            className="absolute bottom-4 left-4 z-40 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300"
+                        >
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={handleLike}
+                                disabled={loading}
+                                className={cn(
+                                    "flex items-center gap-2 px-5 py-3 rounded-full backdrop-blur-md transition-all shadow-lg",
+                                    hasLiked
+                                        ? "bg-red-500/30 text-red-400 border border-red-500/50"
+                                        : "bg-white/10 text-white border border-white/20 hover:bg-white/20",
+                                    loading && "opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                {!user ? (
+                                    <>
+                                        <LogIn className="w-5 h-5" />
+                                        <span className="font-medium text-sm">Đăng nhập để thích</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Heart
+                                            className={cn(
+                                                "w-6 h-6 transition-all",
+                                                hasLiked && "fill-current animate-pulse"
+                                            )}
+                                        />
+                                        <span className="font-medium text-lg">{likes}</span>
+                                    </>
+                                )}
+                            </motion.button>
+                        </div>
                     </div>
-                </div>
-
-                {/* Like Button - Bottom Left Corner */}
-                <div
-                    className="absolute bottom-6 left-6 z-40"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleLike}
-                        disabled={loading}
-                        className={cn(
-                            "flex items-center gap-2 px-5 py-3 rounded-full backdrop-blur-md transition-all shadow-lg",
-                            hasLiked
-                                ? "bg-red-500/30 text-red-400 border border-red-500/50"
-                                : "bg-white/10 text-white border border-white/20 hover:bg-white/20",
-                            loading && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        {!user ? (
-                            <>
-                                <LogIn className="w-5 h-5" />
-                                <span className="font-medium text-sm">Đăng nhập để thích</span>
-                            </>
-                        ) : (
-                            <>
-                                <Heart
-                                    className={cn(
-                                        "w-6 h-6 transition-all",
-                                        hasLiked && "fill-current animate-pulse"
-                                    )}
-                                />
-                                <span className="font-medium text-lg">{likes}</span>
-                            </>
-                        )}
-                    </motion.button>
                 </div>
 
                 {/* Comment Toggle Button - Bottom Right Corner */}

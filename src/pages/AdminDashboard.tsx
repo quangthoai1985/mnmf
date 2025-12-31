@@ -14,10 +14,8 @@ import {
     X,
     Layers,
     Heart,
-    RefreshCw,
-    Plus,
-    Edit2,
-    Check
+    // RefreshCw, Plus, Edit2, Check removed
+
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "@supabase/supabase-js";

@@ -42,7 +42,9 @@ export const AuthModal = ({ isOpen, onClose, initialTab = "login" }: AuthModalPr
             if (activeTab === "register") {
                 // Generate a unique username by appending 4 random characters
                 const username = `${email.split('@')[0]}_${Math.random().toString(36).slice(2, 6)}`;
-                const { error: signUpError } = await supabase.auth.signUp({
+                console.log("Attempting detection registration for:", email);
+
+                const { data, error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
@@ -53,26 +55,19 @@ export const AuthModal = ({ isOpen, onClose, initialTab = "login" }: AuthModalPr
                         },
                     },
                 });
+
+                console.log("SignUp Result:", { data, error: signUpError });
+
                 if (signUpError) throw signUpError;
 
-                // Check if email confirmation is required (Supabase default usually requires it)
-                // We'll show a persistent message or a clear toast instructing the user to check their email.
-                showToast("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản trước khi đăng nhập.", "success");
+                if (!data.user) {
+                    console.error("SignUp succeeded but no user returned. Check Confirm Email settings.");
+                    throw new Error("Đăng ký không thành công (Không tạo được User). Vui lòng thử lại.");
+                }
 
-                // Optional: Show a more prominent UI feedback instead of just a toast, 
-                // leveraging the error/message area in the modal
-                setError("Vui lòng kiểm tra email của bạn để xác thực tài khoản.");
-                // We don't automatically switch to login immediately to let them read the message
-                // or we can switch and show the message there.
-                // setActiveTab("login"); 
+                // Email confirmation is disabled, so user can login immediately
+                showToast("Đăng ký thành công! Bạn có thể đăng nhập ngay.", "success");
 
-                // Let's reset the form but keep them on the register tab or move to login with a message?
-                // Moving to login seems standard, but the message needs to persist.
-                // For now, let's keep them on the register tab with the success message in the error/info box area
-                // actually "setError" renders in red, maybe we need a success state message.
-
-                // Re-implementation:
-                alert("Đăng ký thành công! Vui lòng kiểm tra hộp thư (cả mục Spam) để xác thực tài khoản trước khi đăng nhập.");
                 setActiveTab("login");
             } else {
                 const { error: signInError } = await supabase.auth.signInWithPassword({

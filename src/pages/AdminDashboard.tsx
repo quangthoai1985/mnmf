@@ -190,13 +190,16 @@ export function AdminDashboard() {
                 showToast("Đã xóa ảnh thành công", "success");
 
             } else if (type === 'user') {
-                // Delete User Logic
-                const { error, count } = await supabase.from('profiles').delete({ count: 'exact' }).eq('id', id);
-                console.log("Delete User Result:", { error, count });
+                // Delete User Logic using RPC to remove from auth.users
+                // This requires the function delete_user_completely to exist in DB
+                const { error } = await supabase.rpc('delete_user_completely', { user_id: id });
+
+                console.log("Delete User RPC Result:", { error });
                 if (error) throw error;
-                if (count === 0) throw new Error("Không xóa được user (RLS hoặc không tồn tại)");
+
+                // No count returned from RPC void, but if no error, we assume success
                 setProfiles(prev => prev.filter(p => p.id !== id));
-                showToast("Đã xóa người dùng thành công", "success");
+                showToast("Đã xóa người dùng thành công (bao gồm tài khoản đăng nhập)", "success");
 
             } else if (type === 'category') {
                 // Delete Category Logic

@@ -55,6 +55,24 @@ export const UserProfileModal = ({ isOpen, onClose, user }: UserProfileModalProp
 
             if (updateError) throw updateError;
 
+            // Sync with profiles table
+            if (user) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({
+                        full_name: fullName,
+                        // Update avatar_url if we allow changing it in the future
+                        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`
+                    })
+                    .eq('id', user.id);
+
+                if (profileError) {
+                    console.error("Error syncing profile:", profileError);
+                    // We don't throw here to avoid blocking the auth update success state,
+                    // but we log it. In a strict system, we might want to revert or warn.
+                }
+            }
+
             showToast("Cập nhật thông tin thành công!", "success");
             onClose();
         } catch (err: any) {

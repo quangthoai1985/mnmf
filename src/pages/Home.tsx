@@ -75,10 +75,12 @@ export const Home = () => {
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) {
-            showToast("Đăng xuất thất bại", "error");
-        } else {
-            showToast("Đăng xuất thành công", "success");
+            console.error("Logout error (ignored):", error);
         }
+        // Always treat as success for the user
+        showToast("Đăng xuất thành công", "success");
+        setUser(null);
+        setIsAdmin(false);
     };
 
     // Scroll to gallery function

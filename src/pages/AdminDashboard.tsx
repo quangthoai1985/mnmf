@@ -121,8 +121,10 @@ export function AdminDashboard() {
             setProfiles(profilesData || []);
 
             // Map photos with author names
-            const profilesMap = (profilesData || []).reduce((acc: Record<string, string>, profile: any) => {
-                acc[profile.id] = profile.username || profile.email || 'Unknown';
+            const profilesMap = (profilesData || []).reduce((acc: Record<string, any>, profile: any) => {
+                // Store the whole profile or just the display name logic
+                // Prioritize: full_name > username > email > 'Unknown'
+                acc[profile.id] = profile.full_name || profile.username || profile.email || 'Unknown';
                 return acc;
             }, {});
 
@@ -537,10 +539,10 @@ export function AdminDashboard() {
                                             {profile.avatar_url ? (
                                                 <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <span>{(profile.full_name || profile.username || "U").charAt(0).toUpperCase()}</span>
+                                                <span>{(profile.full_name || profile.username || profile.email || "U").charAt(0).toUpperCase()}</span>
                                             )}
                                         </div>
-                                        <span className="font-medium text-white">{profile.full_name || profile.username || "Chưa đặt tên"}</span>
+                                        <span className="font-medium text-white">{profile.full_name || profile.username || profile.email || "Chưa đặt tên"}</span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-slate-400">{profile.email || "N/A"}</td>

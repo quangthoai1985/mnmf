@@ -107,13 +107,13 @@ export const Navbar = ({ onLoginClick, onRegisterClick, onLogoutClick, onChangeP
                                 onClick={onLoginClick}
                                 className="text-sm font-medium text-white/80 hover:text-white transition-colors"
                             >
-                                Log in
+                                Đăng nhập
                             </button>
                             <button
                                 onClick={onRegisterClick}
                                 className="px-5 py-2 text-sm font-bold text-black bg-white rounded-full hover:bg-gray-200 transition-colors"
                             >
-                                Join
+                                Đăng ký
                             </button>
                         </>
                     )}

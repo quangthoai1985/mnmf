@@ -13,7 +13,11 @@ import {
     Menu,
     X,
     Layers,
-    Heart
+    Heart,
+    RefreshCw,
+    Plus,
+    Edit2,
+    Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "@supabase/supabase-js";
@@ -21,6 +25,7 @@ import { cn } from "../lib/utils";
 import { Lightbox } from "../components/Lightbox";
 import { ConfirmModal } from "../components/ConfirmModal";
 import type { Photo as GalleryPhoto } from "../components/Gallery";
+import { useToast } from '../components/Toast';
 
 interface Photo {
     id: string;
@@ -34,15 +39,16 @@ interface Photo {
     likes?: number;
 }
 
-export const AdminDashboard = () => {
+export function AdminDashboard() {
     const [user, setUser] = useState<User | null>(null);
+    const { showToast } = useToast();
     const [isAdmin, setIsAdmin] = useState(false);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [profiles, setProfiles] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<"overview" | "photos" | "users" | "categories">("overview");
+    const [activeTab, setActiveTab] = useState<"overview" | "users" | "photos" | "categories">("overview");
 
     // Category form states
     const [newCategoryName, setNewCategoryName] = useState("");
@@ -181,6 +187,7 @@ export const AdminDashboard = () => {
                 if (error) throw error;
                 if (count === 0) throw new Error("Không xóa được ảnh (RLS hoặc không tồn tại)");
                 setPhotos(prev => prev.filter((p) => p.id !== id));
+                showToast("Đã xóa ảnh thành công", "success");
 
             } else if (type === 'user') {
                 // Delete User Logic
@@ -189,6 +196,7 @@ export const AdminDashboard = () => {
                 if (error) throw error;
                 if (count === 0) throw new Error("Không xóa được user (RLS hoặc không tồn tại)");
                 setProfiles(prev => prev.filter(p => p.id !== id));
+                showToast("Đã xóa người dùng thành công", "success");
 
             } else if (type === 'category') {
                 // Delete Category Logic
@@ -197,13 +205,17 @@ export const AdminDashboard = () => {
                 if (error) throw error;
                 if (count === 0) throw new Error("Không xóa được category (RLS hoặc không tồn tại)");
                 setCategories(prev => prev.filter(c => c.id !== id));
+                showToast("Đã xóa thể loại thành công", "success");
             }
         } catch (error: any) {
             console.error("Admin delete error:", error);
-            alert("Lỗi: " + error.message);
+            showToast(error.message || "Lỗi xóa dữ liệu", "error");
         } finally {
             setIsDeleting(false);
             setDeleteModal({ isOpen: false, type: null, id: null });
+            if (!isDeleting) { // Only show success if we reached here without error re-throw loop (which isn't fully accurate in this structure but alert replacement is key)
+                // Actually we threw error above so success toast needs to be inside try block before finally
+            }
         }
     };
 
@@ -223,8 +235,9 @@ export const AdminDashboard = () => {
 
             setCategories([...categories, data]);
             setNewCategoryName("");
+            showToast("Đã thêm thể loại mới", "success");
         } catch (error: any) {
-            alert("Lỗi thêm thể loại: " + error.message);
+            showToast("Lỗi thêm thể loại: " + error.message, "error");
         }
     };
 
@@ -245,8 +258,9 @@ export const AdminDashboard = () => {
 
             setCategories(categories.map(c => c.id === id ? { ...c, name: newName.trim() } : c));
             setEditingCategory(null);
+            showToast("Đã cập nhật thể loại", "success");
         } catch (error: any) {
-            alert("Lỗi cập nhật thể loại: " + error.message);
+            showToast("Lỗi cập nhật thể loại: " + error.message, "error");
         }
     };
 

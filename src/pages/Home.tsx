@@ -1,90 +1,120 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { Navbar } from "../components/Navbar";
 import { Hero } from "../components/Hero";
 import { Gallery } from "../components/Gallery";
-import { Navbar } from "../components/Navbar";
+import { TopVoted } from "../components/TopVoted";
 import { AuthModal } from "../components/auth/AuthModal";
 import { ChangePasswordModal } from "../components/auth/ChangePasswordModal";
 import { supabase } from "../lib/supabase";
 import type { User } from "@supabase/supabase-js";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useToast } from "../components/Toast";
 
 export const Home = () => {
-    const [isAuthOpen, setIsAuthOpen] = useState(false);
-    const [authTab, setAuthTab] = useState<"login" | "register">("login");
     const [user, setUser] = useState<User | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
-
-    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
-
-    const galleryRef = useRef<HTMLDivElement>(null);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [authModalTab, setAuthModalTab] = useState<"login" | "register">("login");
+    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { showToast } = useToast();
 
     useEffect(() => {
-        const checkUserAndRole = async (currentUser: User | null) => {
-            setUser(currentUser);
-            if (currentUser) {
-                // Check if user is admin
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', currentUser.id)
-                    .single();
-                setIsAdmin(profile?.role === 'admin');
-            } else {
-                setIsAdmin(false);
-            }
-        };
-
+        // Check current session
         supabase.auth.getSession().then(({ data: { session } }) => {
-            checkUserAndRole(session?.user ?? null);
+            setUser(session?.user ?? null);
+            checkAdmin(session?.user ?? null);
         });
 
+        // Listen for auth changes
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
-            checkUserAndRole(session?.user ?? null);
+            setUser(session?.user ?? null);
+            checkAdmin(session?.user ?? null);
         });
 
-        return () => subscription.unsubscribe();
-    }, []);
+        // Handle password reset flow
+        if (location.hash.includes('type=recovery')) {
+            setIsChangePasswordModalOpen(true);
+            // Clear hash to prevent reopening on refresh
+            navigate('/', { replace: true });
+        }
 
-    const scrollToGallery = () => {
-        galleryRef.current?.scrollIntoView({ behavior: "smooth" });
+        return () => subscription.unsubscribe();
+    }, [location, navigate]);
+
+    const checkAdmin = async (currentUser: User | null) => {
+        if (!currentUser) {
+            setIsAdmin(false);
+            return;
+        }
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single();
+
+        setIsAdmin(profile?.role === 'admin');
+    };
+
+    const handleLoginClick = () => {
+        setAuthModalTab("login");
+        setIsAuthModalOpen(true);
+    };
+
+    const handleRegisterClick = () => {
+        setAuthModalTab("register");
+        setIsAuthModalOpen(true);
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            showToast("Đăng xuất thất bại", "error");
+        } else {
+            showToast("Đăng xuất thành công", "success");
+        }
     };
 
-    const openAuth = (tab: "login" | "register") => {
-        setAuthTab(tab);
-        setIsAuthOpen(true);
+    // Scroll to gallery function
+    const scrollToGallery = () => {
+        const gallerySection = document.getElementById('gallery-section');
+        if (gallerySection) {
+            gallerySection.scrollIntoView({ behavior: 'smooth' });
+        }
     };
 
     return (
-        <div className="min-h-screen bg-background text-foreground dark selection:bg-white selection:text-black">
+        <div className="min-h-screen bg-black text-white dark selection:bg-white selection:text-black">
             <Navbar
-                onLoginClick={() => openAuth("login")}
-                onRegisterClick={() => openAuth("register")}
+                onLoginClick={handleLoginClick}
+                onRegisterClick={handleRegisterClick}
                 onLogoutClick={handleLogout}
-                onChangePasswordClick={() => setIsChangePasswordOpen(true)}
+                onChangePasswordClick={() => setIsChangePasswordModalOpen(true)}
                 user={user}
                 isAdmin={isAdmin}
             />
 
             <Hero onEnter={scrollToGallery} />
 
-            <div ref={galleryRef}>
-                <Gallery user={user} onLoginClick={() => openAuth("login")} />
+            <TopVoted />
+
+            <div id="gallery-section">
+                <Gallery user={user} onLoginClick={handleLoginClick} />
             </div>
 
             <AuthModal
-                isOpen={isAuthOpen}
-                onClose={() => setIsAuthOpen(false)}
-                initialTab={authTab}
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                initialTab={authModalTab}
             />
 
             <ChangePasswordModal
-                isOpen={isChangePasswordOpen}
-                onClose={() => setIsChangePasswordOpen(false)}
+                isOpen={isChangePasswordModalOpen}
+                onClose={() => setIsChangePasswordModalOpen(false)}
             />
         </div>
     );

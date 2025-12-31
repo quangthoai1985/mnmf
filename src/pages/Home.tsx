@@ -5,6 +5,7 @@ import { Gallery } from "../components/Gallery";
 import { TopVoted } from "../components/TopVoted";
 import { AuthModal } from "../components/auth/AuthModal";
 import { ChangePasswordModal } from "../components/auth/ChangePasswordModal";
+import { UserProfileModal } from "../components/auth/UserProfileModal";
 import { supabase } from "../lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ export const Home = () => {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [authModalTab, setAuthModalTab] = useState<"login" | "register">("login");
     const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -93,7 +95,7 @@ export const Home = () => {
                 onLoginClick={handleLoginClick}
                 onRegisterClick={handleRegisterClick}
                 onLogoutClick={handleLogout}
-                onChangePasswordClick={() => setIsChangePasswordModalOpen(true)}
+                onProfileClick={() => setIsProfileModalOpen(true)}
                 user={user}
                 isAdmin={isAdmin}
             />
@@ -115,6 +117,12 @@ export const Home = () => {
             <ChangePasswordModal
                 isOpen={isChangePasswordModalOpen}
                 onClose={() => setIsChangePasswordModalOpen(false)}
+            />
+
+            <UserProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                user={user}
             />
         </div>
     );

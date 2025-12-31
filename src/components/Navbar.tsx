@@ -9,12 +9,12 @@ interface NavbarProps {
     onLoginClick: () => void;
     onRegisterClick: () => void;
     onLogoutClick: () => void;
-    onChangePasswordClick?: () => void;
+    onProfileClick?: () => void;
     user: User | null;
     isAdmin?: boolean;
 }
 
-export const Navbar = ({ onLoginClick, onRegisterClick, onLogoutClick, onChangePasswordClick, user, isAdmin = false }: NavbarProps) => {
+export const Navbar = ({ onLoginClick, onRegisterClick, onLogoutClick, onProfileClick, user, isAdmin = false }: NavbarProps) => {
     const navigate = useNavigate();
     const { scrollY } = useScroll();
     const [hidden, setHidden] = useState(false);
@@ -72,27 +72,23 @@ export const Navbar = ({ onLoginClick, onRegisterClick, onLogoutClick, onChangeP
                                 </button>
                             )}
 
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-medium text-white hidden md:block">
-                                    {user.user_metadata.full_name || "User"}
-                                </span>
-                                <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20">
+                            <button
+                                onClick={onProfileClick}
+                                className="flex items-center gap-3 pl-1 pr-4 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all group"
+                                title="Cập nhật thông tin"
+                            >
+                                <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20">
                                     <img
                                         src={user.user_metadata.avatar_url || "https://ui-avatars.com/api/?name=User"}
                                         alt="Avatar"
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
-                            </div>
-                            {onChangePasswordClick && (
-                                <button
-                                    onClick={onChangePasswordClick}
-                                    className="p-2 text-white/60 hover:text-white transition-colors"
-                                    title="Change Password"
-                                >
-                                    <Lock className="w-5 h-5" />
-                                </button>
-                            )}
+                                <span className="text-sm font-medium text-white hidden md:block">
+                                    {user.user_metadata.full_name || "User"}
+                                </span>
+                                <Lock className="w-3 h-3 text-white/50 group-hover:text-white transition-colors ml-1" />
+                            </button>
                             <button
                                 onClick={onLogoutClick}
                                 className="p-2 text-white/60 hover:text-white transition-colors"

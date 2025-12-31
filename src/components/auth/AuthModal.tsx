@@ -54,7 +54,25 @@ export const AuthModal = ({ isOpen, onClose, initialTab = "login" }: AuthModalPr
                     },
                 });
                 if (signUpError) throw signUpError;
-                showToast("Đăng ký thành công! Bạn có thể đăng nhập ngay.", "success");
+
+                // Check if email confirmation is required (Supabase default usually requires it)
+                // We'll show a persistent message or a clear toast instructing the user to check their email.
+                showToast("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản trước khi đăng nhập.", "success");
+
+                // Optional: Show a more prominent UI feedback instead of just a toast, 
+                // leveraging the error/message area in the modal
+                setError("Vui lòng kiểm tra email của bạn để xác thực tài khoản.");
+                // We don't automatically switch to login immediately to let them read the message
+                // or we can switch and show the message there.
+                // setActiveTab("login"); 
+
+                // Let's reset the form but keep them on the register tab or move to login with a message?
+                // Moving to login seems standard, but the message needs to persist.
+                // For now, let's keep them on the register tab with the success message in the error/info box area
+                // actually "setError" renders in red, maybe we need a success state message.
+
+                // Re-implementation:
+                alert("Đăng ký thành công! Vui lòng kiểm tra hộp thư (cả mục Spam) để xác thực tài khoản trước khi đăng nhập.");
                 setActiveTab("login");
             } else {
                 const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -71,8 +89,19 @@ export const AuthModal = ({ isOpen, onClose, initialTab = "login" }: AuthModalPr
                 onClose();
             }
         } catch (err: any) {
-            setError(err.message || "An error occurred");
-            showToast(err.message || "Có lỗi xảy ra", "error");
+            let message = err.message || "An error occurred";
+
+            // Translate common Supabase errors
+            if (message.includes("Email not confirmed")) {
+                message = "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email của bạn để xác thực.";
+            } else if (message.includes("Invalid login credentials")) {
+                message = "Email hoặc mật khẩu không chính xác.";
+            } else if (message.includes("User already registered")) {
+                message = "Email này đã được sử dụng.";
+            }
+
+            setError(message);
+            showToast(message, "error");
         } finally {
             setLoading(false);
         }

@@ -13,10 +13,12 @@ import {
     Loader2,
     CloudUpload,
     MoreVertical,
-    LogOut
+    LogOut,
+    Lock
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { UserProfileModal } from "../components/auth/UserProfileModal";
 import { useToast } from "../components/Toast";
 import { cn } from "../lib/utils";
 
@@ -52,6 +54,9 @@ export const UserPhotos = () => {
 
     // Delete Modal state
     const [photoToDelete, setPhotoToDelete] = useState<Photo | null>(null);
+
+    // Profile Modal state
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
 
     useEffect(() => {
@@ -308,7 +313,11 @@ export const UserPhotos = () => {
                     </div>
                     <div className="flex items-center gap-4">
                         {user && (
-                            <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 mr-2">
+                            <button
+                                onClick={() => setIsProfileModalOpen(true)}
+                                className="flex items-center gap-3 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full border border-white/5 mr-2 transition-all group"
+                                title="Cập nhật thông tin"
+                            >
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 overflow-hidden">
                                     <img
                                         src={user.user_metadata.avatar_url || `https://ui-avatars.com/api/?name=${user.user_metadata.full_name || 'User'}`}
@@ -319,7 +328,10 @@ export const UserPhotos = () => {
                                 <span className="text-sm font-medium text-slate-200 hidden sm:block">
                                     {user.user_metadata.full_name || "Nhiếp ảnh gia"}
                                 </span>
-                            </div>
+                                <div className="ml-1 text-slate-500 group-hover:text-white transition-colors">
+                                    <Lock className="w-3.5 h-3.5" />
+                                </div>
+                            </button>
                         )}
                         <button
                             onClick={async () => {
@@ -599,6 +611,11 @@ export const UserPhotos = () => {
                 confirmText="Xóa ngay"
                 isDangerous={true}
                 isLoading={isDeleting}
+            />
+            <UserProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                user={user}
             />
         </div>
     );
